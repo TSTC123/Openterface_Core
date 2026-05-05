@@ -14,11 +14,26 @@ on:
         default: true
 
 jobs:
-  build-and-release:
-    name: Build and release
-    runs-on: ubuntu-latest
-    outputs:
-      tag: ${{ steps.tag.outputs.tag }}
+  build:
+    name: Build ${{ matrix.platform }} / ${{ matrix.compiler }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - platform: linux
+            os: ubuntu-latest
+            compiler: gcc
+            lib_name: libkeymod.a
+
+          - platform: macos
+            os: macos-latest
+            compiler: clang
+            lib_name: libkeymod.a
+
+          - platform: windows
+            os: windows-latest
+            compiler: msvc
+            lib_name: keymod.lib
 
     steps:
       - uses: actions/checkout@v4
@@ -27,16 +42,54 @@ jobs:
         run: cmake -B build
 
       - name: Build
-        run: cmake --build build -- -j$(nproc)
+        run: cmake --build build --config Release
 
       - name: Run tests
-        run: ctest --test-dir build --output-on-failure
+        run: ctest --test-dir build --output-on-failure -C Release
 
-      - name: Collect artifacts
+      - name: Collect library
         run: |
           mkdir -p out
-          cp build/libkeymod.a out/libkeymod.a
-          tar czf out/keymod-headers.tar.gz -C include .
+        shell: bash
+
+      - name: Copy library (Unix)
+        if: runner.os != 'Windows'
+        run: cp build/${{ matrix.lib_name }} out/${{ matrix.platform }}_${{ matrix.lib_name }}
+        shell: bash
+
+      - name: Copy library (Windows)
+        if: runner.os == 'Windows'
+        run: cp build/Release/${{ matrix.lib_name }} out/${{ matrix.platform }}_${{ matrix.lib_name }}
+        shell: bash
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.platform }}-lib
+          path: out/${{ matrix.platform }}_${{ matrix.lib_name }}
+
+  release:
+    needs: [build]
+    name: Create release
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: out
+
+      - name: Package headers
+        run: |
+          mkdir -p out/artifacts
+          tar czf out/artifacts/keymod-headers.tar.gz -C include .
+          cp out/linux-lib/libkeymod.a out/artifacts/libkeymod-linux.a
+          cp out/macos-lib/libkeymod.a out/artifacts/libkeymod-macos.a
+          cp out/windows-lib/keymod.lib out/artifacts/keymod-windows.lib
 
       - name: Create tag
         id: tag
@@ -57,6 +110,5 @@ jobs:
             ARGS+=(--draft)
           fi
           gh release create "${{ steps.tag.outputs.tag }}" \
-            out/libkeymod.a \
-            out/keymod-headers.tar.gz \
+            out/artifacts/* \
             "${ARGS[@]}"
