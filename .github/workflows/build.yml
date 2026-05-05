@@ -1,0 +1,55 @@
+name: Build
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build:
+    name: ${{ matrix.os }} / ${{ matrix.compiler }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        compiler:
+          - { cc: gcc, cxx: g++ }
+          - { cc: clang, cxx: clang++ }
+        include:
+          - os: ubuntu-latest
+            cc_package: gcc
+          - os: macos-latest
+            cc_package: null
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ${{ matrix.cc_package }}
+
+      - name: Configure
+        run: cmake -B build -DCMAKE_C_COMPILER=${{ matrix.compiler.cc }} -DCMAKE_CXX_COMPILER=${{ matrix.compiler.cxx }}
+
+      - name: Build
+        run: cmake --build build -- -j$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 2)
+
+      - name: Run tests
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Collect artifacts
+        if: matrix.os == 'ubuntu-latest' && matrix.compiler.cc == 'gcc'
+        run: |
+          mkdir -p out/lib
+          cp build/libkeymod.a out/lib/
+          cp -r include out/include
+
+      - name: Upload libkeymod.a
+        if: matrix.os == 'ubuntu-latest' && matrix.compiler.cc == 'gcc'
+        uses: actions/upload-artifact@v4
+        with:
+          name: libkeymod-linux-gcc
+          path: out/
