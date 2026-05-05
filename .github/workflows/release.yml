@@ -1,0 +1,62 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g. 0.0.1)'
+        required: true
+        type: string
+      draft:
+        description: 'Create as draft release'
+        required: true
+        type: boolean
+        default: true
+
+jobs:
+  build-and-release:
+    name: Build and release
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure CMake
+        run: cmake -B build
+
+      - name: Build
+        run: cmake --build build -- -j$(nproc)
+
+      - name: Run tests
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Collect artifacts
+        run: |
+          mkdir -p out
+          cp build/libkeymod.a out/libkeymod.a
+          tar czf out/keymod-headers.tar.gz -C include .
+
+      - name: Create tag
+        id: tag
+        run: |
+          TAG="v${{ github.event.inputs.version }}"
+          git tag "$TAG"
+          git push origin "$TAG"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ github.event.inputs.version }}
+          DRAFT: ${{ github.event.inputs.draft }}
+        run: |
+          ARGS=(--title "Release ${VERSION}" --generate-notes)
+          if [ "$DRAFT" = "true" ]; then
+            ARGS+=(--draft)
+          fi
+          gh release create "${{ steps.tag.outputs.tag }}" \
+            out/libkeymod.a \
+            out/keymod-headers.tar.gz \
+            "${ARGS[@]}"
