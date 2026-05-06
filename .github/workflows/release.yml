@@ -127,7 +127,7 @@ jobs:
           git push origin "$TAG"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
-      - name: Create release
+      - name: Ensure release exists
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ github.event.inputs.version }}
@@ -137,9 +137,17 @@ jobs:
           if [ "$DRAFT" = "true" ]; then
             ARGS+=(--draft)
           fi
-          gh release create "${{ steps.tag.outputs.tag }}" \
+          if ! gh release view "${{ steps.tag.outputs.tag }}" >/dev/null 2>&1; then
+            gh release create "${{ steps.tag.outputs.tag }}" "${ARGS[@]}"
+          fi
+
+      - name: Upload release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${{ steps.tag.outputs.tag }}" \
             out/artifacts/libkeymod-linux.a \
             out/artifacts/libkeymod-macos.a \
             out/artifacts/keymod-windows.lib \
             out/artifacts/keymod-headers.tar.gz \
-            "${ARGS[@]}"
+            --clobber
