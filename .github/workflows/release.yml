@@ -13,83 +13,111 @@ on:
         type: boolean
         default: true
 
+permissions:
+  contents: write
+
 jobs:
-  build:
-    name: Build ${{ matrix.platform }} / ${{ matrix.compiler }}
+  build-artifacts:
+    name: Build ${{ matrix.label }} artifact
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         include:
-          - platform: linux
-            os: ubuntu-latest
-            compiler: gcc
-            lib_name: libkeymod.a
-
-          - platform: macos
-            os: macos-latest
-            compiler: clang
-            lib_name: libkeymod.a
-
-          - platform: windows
-            os: windows-latest
-            compiler: msvc
-            lib_name: keymod.lib
+          - os: ubuntu-latest
+            label: linux
+            artifact_name: linux-lib
+            library_path: build/libkeymod.a
+            release_name: libkeymod-linux.a
+          - os: macos-latest
+            label: macos
+            artifact_name: macos-lib
+            library_path: build/libkeymod.a
+            release_name: libkeymod-macos.a
+          - os: windows-latest
+            label: windows
+            artifact_name: windows-lib
+            library_path: build/Release/keymod.lib
+            release_name: keymod-windows.lib
 
     steps:
       - uses: actions/checkout@v4
 
       - name: Configure CMake
-        run: cmake -B build
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
         run: cmake --build build --config Release
 
       - name: Run tests
-        run: ctest --test-dir build --output-on-failure -C Release
+        run: ctest --test-dir build -C Release --output-on-failure
 
-      - name: Collect library
-        run: |
-          mkdir -p out
-        shell: bash
-
-      - name: Copy library (Unix)
+      - name: Collect Unix artifact
         if: runner.os != 'Windows'
-        run: cp build/${{ matrix.lib_name }} out/${{ matrix.platform }}_${{ matrix.lib_name }}
         shell: bash
+        run: |
+          mkdir -p out/${{ matrix.artifact_name }}
+          cp "${{ matrix.library_path }}" "out/${{ matrix.artifact_name }}/${{ matrix.release_name }}"
 
-      - name: Copy library (Windows)
+      - name: Collect Windows artifact
         if: runner.os == 'Windows'
-        run: cp build/Release/${{ matrix.lib_name }} out/${{ matrix.platform }}_${{ matrix.lib_name }}
-        shell: bash
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "out/${{ matrix.artifact_name }}" | Out-Null
+          Copy-Item "${{ matrix.library_path }}" "out/${{ matrix.artifact_name }}/${{ matrix.release_name }}"
 
-      - name: Upload artifact
+      - name: Upload library artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.platform }}-lib
-          path: out/${{ matrix.platform }}_${{ matrix.lib_name }}
+          name: ${{ matrix.artifact_name }}
+          path: out/${{ matrix.artifact_name }}/
 
-  release:
-    needs: [build]
+      - name: Upload header artifact
+        if: matrix.label == 'linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: headers
+          path: include/
+
+  create-release:
     name: Create release
     runs-on: ubuntu-latest
-    outputs:
-      tag: ${{ steps.tag.outputs.tag }}
+    needs: build-artifacts
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download all artifacts
+      - name: Download Linux artifact
         uses: actions/download-artifact@v4
         with:
-          path: out
+          name: linux-lib
+          path: out/linux-lib
 
-      - name: Package headers
+      - name: Download macOS artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-lib
+          path: out/macos-lib
+
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-lib
+          path: out/windows-lib
+
+      - name: Download headers
+        uses: actions/download-artifact@v4
+        with:
+          name: headers
+          path: out/include
+
+      - name: Package release assets
         run: |
           mkdir -p out/artifacts
-          tar czf out/artifacts/keymod-headers.tar.gz -C include .
-          cp out/linux-lib/libkeymod.a out/artifacts/libkeymod-linux.a
-          cp out/macos-lib/libkeymod.a out/artifacts/libkeymod-macos.a
-          cp out/windows-lib/keymod.lib out/artifacts/keymod-windows.lib
+          tar czf out/artifacts/keymod-headers.tar.gz -C out/include .
+          cp out/linux-lib/libkeymod-linux.a out/artifacts/libkeymod-linux.a
+          cp out/macos-lib/libkeymod-macos.a out/artifacts/libkeymod-macos.a
+          cp out/windows-lib/keymod-windows.lib out/artifacts/keymod-windows.lib
 
       - name: Create tag
         id: tag
@@ -110,5 +138,8 @@ jobs:
             ARGS+=(--draft)
           fi
           gh release create "${{ steps.tag.outputs.tag }}" \
-            out/artifacts/* \
+            out/artifacts/libkeymod-linux.a \
+            out/artifacts/libkeymod-macos.a \
+            out/artifacts/keymod-windows.lib \
+            out/artifacts/keymod-headers.tar.gz \
             "${ARGS[@]}"
