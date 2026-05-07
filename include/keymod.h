@@ -122,12 +122,20 @@ int km_build_press_release(uint8_t out[2 * KM_PKT_KEYBOARD_SIZE],
 /* ── Token / macro parser ───────────────────────────────────────────────── */
 
 /**
- * Parsed result from km_parse_token().
+ * Parsed result from km_parse_token() and km_parse_macro().
  */
 typedef struct {
     int  hid_code;    /* HID usage code, -1 if invalid */
     int  modifiers;   /* Modifier bitmask at time of key recognition */
 } km_parsed_token_t;
+
+/**
+ * UTF-8 byte span describing one raw script token inside the original input.
+ */
+typedef struct {
+    int start_utf8;
+    int length_utf8;
+} km_script_token_span_t;
 
 /**
  * Parse a macro token string into a HID code + modifier bitmask.
@@ -154,6 +162,19 @@ km_parsed_token_t km_parse_token(const char *token);
  * @return           Number of entries written.
  */
 int km_parse_macro(const char *input, km_parsed_token_t out[], int max);
+
+/**
+ * Tokenize a macro script into raw tag or character spans.
+ *
+ * Tags are recognized only in the canonical macro-script form used by the app:
+ * `</?[A-Z0-9]+>`. Everything else is emitted as a single UTF-8 character span.
+ *
+ * @param  input  Null-terminated UTF-8 macro script.
+ * @param  out    Output array (caller-allocated, at least @p max entries).
+ * @param  max    Maximum number of spans to write.
+ * @return        Number of spans written.
+ */
+int km_tokenize_script(const char *input, km_script_token_span_t out[], int max);
 
 /* ── Utility ────────────────────────────────────────────────────────────── */
 
