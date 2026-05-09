@@ -23,10 +23,12 @@ extern "C" {
 /* ── Packet size constants ──────────────────────────────────────────────── */
 #define KM_PKT_KEYBOARD_SIZE  14  /* 5 header + 8 data + 1 checksum */
 #define KM_PKT_MOUSE_REL_SIZE 11  /* 5 header + 5 data + 1 checksum */
+#define KM_PKT_MOUSE_ABS_SIZE 13  /* 5 header + 7 data + 1 checksum */
 
 /* ── CH9329 command codes ───────────────────────────────────────────────── */
 #define KM_CMD_KB       0x02
 #define KM_CMD_MS_REL   0x05
+#define KM_CMD_MS_ABS   0x04
 
 /* ── Mouse button mask ──────────────────────────────────────────────────── */
 #define KM_MS_BTN_NONE   0x00
@@ -102,6 +104,24 @@ int km_build_mouse_rel(uint8_t out[KM_PKT_MOUSE_REL_SIZE],
                         uint8_t buttons,
                         int8_t dx,
                         int8_t dy,
+                        int8_t wheel);
+
+/**
+ * Build a CH9329 absolute-mouse packet.
+ *
+ * Format: 57 AB 00 04 07 | 01 | buttons | x_lo | x_hi | y_lo | y_hi | wheel | checksum
+ *
+ * @param  out       Output buffer (must be >= KM_PKT_MOUSE_ABS_SIZE bytes).
+ * @param  buttons   Button bitmask (KM_MS_BTN_*).
+ * @param  x         Absolute X position (0–4095).
+ * @param  y         Absolute Y position (0–4095).
+ * @param  wheel     Scroll wheel delta (-128..127).
+ * @return           Actual packet length (always KM_PKT_MOUSE_ABS_SIZE).
+ */
+int km_build_mouse_abs(uint8_t out[KM_PKT_MOUSE_ABS_SIZE],
+                        uint8_t buttons,
+                        uint16_t x,
+                        uint16_t y,
                         int8_t wheel);
 
 /**

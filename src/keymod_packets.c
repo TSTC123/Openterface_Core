@@ -5,6 +5,7 @@
 /* Common 5-byte magic header: 57 AB 00 <cmd> <len> */
 static const uint8_t KB_HDR[]  = { 0x57, 0xAB, 0x00, KM_CMD_KB,     0x08 };
 static const uint8_t MS_HDR[]  = { 0x57, 0xAB, 0x00, KM_CMD_MS_REL, 0x05 };
+static const uint8_t MS_ABS_HDR[] = { 0x57, 0xAB, 0x00, KM_CMD_MS_ABS, 0x07 };
 
 static void copy_packet_header(uint8_t *out, const uint8_t header[5]) {
     memcpy(out, header, 5);
@@ -71,6 +72,23 @@ int km_build_mouse_rel(uint8_t out[KM_PKT_MOUSE_REL_SIZE],
     out[9] = (uint8_t)wheel;
     finalize_packet(out, KM_PKT_MOUSE_REL_SIZE);
     return KM_PKT_MOUSE_REL_SIZE;
+}
+
+int km_build_mouse_abs(uint8_t out[KM_PKT_MOUSE_ABS_SIZE],
+                        uint8_t buttons,
+                        uint16_t x,
+                        uint16_t y,
+                        int8_t wheel) {
+    copy_packet_header(out, MS_ABS_HDR);
+    out[5] = 0x01;
+    out[6] = buttons;
+    out[7] = x & 0xFF;
+    out[8] = (x >> 8) & 0xFF;
+    out[9] = y & 0xFF;
+    out[10] = (y >> 8) & 0xFF;
+    out[11] = (uint8_t)wheel;
+    finalize_packet(out, KM_PKT_MOUSE_ABS_SIZE);
+    return KM_PKT_MOUSE_ABS_SIZE;
 }
 
 int km_build_press_release(uint8_t out[2 * KM_PKT_KEYBOARD_SIZE],
