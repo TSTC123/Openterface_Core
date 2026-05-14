@@ -127,6 +127,7 @@ const name_entry_t km_name_map[] = {
     { "NumpadAsterisk", 0x55 }, { "NumpadMinus", 0x56 }, { "NumpadPlus", 0x57 },
     { "NumpadEnter", 0x58 }, { "NumpadEquals", 0x67 }, { "NumLock", 0x53 },
     { "Ctrl", 0xE0 }, { "Shift", 0xE1 }, { "Alt", 0xE2 }, { "Cmd", 0xE3 }, { "Win", 0xE3 },
+    { "App", 0x65 }, { "ScrollLock", 0x47 }, { "PrtSc", 0x46 }, { "Pause", 0x48 },
 };
 
 const int km_name_map_len = sizeof(km_name_map) / sizeof(km_name_map[0]);
