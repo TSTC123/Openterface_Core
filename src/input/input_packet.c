@@ -7,6 +7,12 @@ static const uint8_t KB_HDR[]     = { 0x57, 0xAB, 0x00, OP_INPUT_CMD_KB,     0x0
 static const uint8_t MS_HDR[]     = { 0x57, 0xAB, 0x00, OP_INPUT_CMD_MS_REL, 0x05 };
 static const uint8_t MS_ABS_HDR[] = { 0x57, 0xAB, 0x00, OP_INPUT_CMD_MS_ABS, 0x07 };
 
+/* Mouse mode byte (byte 5 after 5-byte header) */
+enum {
+    OP_INPUT_MS_MODE_REL = 0x01,
+    OP_INPUT_MS_MODE_ABS = 0x02,
+};
+
 static void copy_packet_header(uint8_t *out, const uint8_t header[5]) {
     memcpy(out, header, 5);
 }
@@ -65,7 +71,7 @@ int op_input_build_mouse_rel(uint8_t out[OP_INPUT_PKT_MOUSE_REL_SIZE],
                               int8_t dy,
                               int8_t wheel) {
     copy_packet_header(out, MS_HDR);
-    out[5] = 0x01;
+    out[5] = OP_INPUT_MS_MODE_REL;
     out[6] = buttons;
     out[7] = (uint8_t)dx;
     out[8] = (uint8_t)dy;
@@ -80,7 +86,7 @@ int op_input_build_mouse_abs(uint8_t out[OP_INPUT_PKT_MOUSE_ABS_SIZE],
                               uint16_t y,
                               int8_t wheel) {
     copy_packet_header(out, MS_ABS_HDR);
-    out[5] = 0x01;
+    out[5] = OP_INPUT_MS_MODE_ABS;
     out[6] = buttons;
     out[7] = x & 0xFF;
     out[8] = (x >> 8) & 0xFF;

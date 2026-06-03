@@ -132,6 +132,28 @@ static void test_mouse_packet(void) {
     ASSERT_EQ(0x07, pkt[6], "all buttons bitmask");
 }
 
+static void test_mouse_abs_packet(void) {
+    uint8_t pkt[OP_INPUT_PKT_MOUSE_ABS_SIZE];
+
+    /* Absolute packet: 57 AB 00 04 07 02 [buttons] [xL] [xH] [yL] [yH] [wheel] [sum] */
+    int len = op_input_build_mouse_abs(pkt, OP_INPUT_MS_BTN_NONE, 0x0123, 0x0456, -1);
+    ASSERT_EQ(OP_INPUT_PKT_MOUSE_ABS_SIZE, len, "mouse abs packet length");
+    ASSERT_EQ(0x57, pkt[0], "abs header byte 0");
+    ASSERT_EQ(0xAB, pkt[1], "abs header byte 1");
+    ASSERT_EQ(OP_INPUT_CMD_MS_ABS, pkt[3], "abs mouse command");
+    ASSERT_EQ(0x07, pkt[4], "abs mouse data length");
+    ASSERT_EQ(0x02, pkt[5], "absolute mode");
+    ASSERT_EQ(0x00, pkt[6], "abs buttons = none");
+    ASSERT_EQ(0x23, pkt[7], "abs x low");
+    ASSERT_EQ(0x01, pkt[8], "abs x high");
+    ASSERT_EQ(0x56, pkt[9], "abs y low");
+    ASSERT_EQ(0x04, pkt[10], "abs y high");
+    ASSERT_EQ(-1, (int8_t)pkt[11], "abs wheel = -1");
+
+    uint8_t expected_cs = op_input_checksum(pkt, OP_INPUT_PKT_MOUSE_ABS_SIZE);
+    ASSERT_EQ(expected_cs, pkt[12], "abs checksum byte");
+}
+
 /* ── Press + release ───────────────────────────────────────────────────── */
 
 static void test_press_release(void) {
@@ -372,6 +394,7 @@ int main(void) {
     test_checksum();
     test_keyboard_packet();
     test_mouse_packet();
+    test_mouse_abs_packet();
     test_press_release();
     test_dom_code_mapping();
     test_hid_codes();
