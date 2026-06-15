@@ -49,6 +49,7 @@ target_compile_options(openterface_protocol_ch9329 PRIVATE
     $<$<C_COMPILER_ID:MSVC>:/W4>
     $<$<NOT:$<C_COMPILER_ID:MSVC>>:-Wall -Wextra>
 )
+target_link_libraries(openterface_protocol_ch9329 PUBLIC openterface_core_input)
 
 # ── platform: internal-only backend layer ────────────────────────────────
 set(OPENTERFACE_PLATFORM_SOURCES
@@ -96,10 +97,11 @@ if(BUILD_NATIVE_CORE)
             src/chip
     )
     target_link_libraries(openterface_core_native
-        PUBLIC openterface_core_common
+        PUBLIC
+            openterface_core_common
+            openterface_protocol_ch9329
         PRIVATE
             openterface_platform_internal
-            openterface_protocol_ch9329
     )
     target_compile_options(openterface_core_native PRIVATE
         $<$<C_COMPILER_ID:MSVC>:/W4>
