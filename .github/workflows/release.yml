@@ -37,7 +37,7 @@ jobs:
           - os: windows-latest
             label: windows
             artifact_name: windows-libs
-            library_paths: build/Release/openterface_core_common.lib build/Release/openterface_core_input.lib build/Release/openterface_protocol_ch9329.lib build/Release/openterface_core_native.lib build/Release/openterface_watchdog.lib build/Release/openterface_platform_internal.lib
+            library_paths: build/lib/Release/openterface_core_common.lib build/lib/Release/openterface_core_input.lib build/lib/Release/openterface_protocol_ch9329.lib build/lib/Release/openterface_core_native.lib build/lib/Release/openterface_watchdog.lib build/lib/Release/openterface_platform_internal.lib
             release_prefix: openterface-core-windows
 
     steps:
