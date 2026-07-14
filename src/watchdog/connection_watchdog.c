@@ -174,7 +174,13 @@ void op_watchdog_tick(op_watchdog_t *wd, uint32_t elapsed_ms) {
                             status = op_watchdog_run_health_probe(wd);
                         }
                         if (status == OP_STATUS_OK) {
-                            op_watchdog_reset_to_connected(wd);
+                            /* only reset to connected if recovery not exhausted */
+                            if (wd->recovery_attempts < wd->max_recovery_attempts) {
+                                op_watchdog_reset_to_connected(wd);
+                            } else {
+                                wd->state = OP_CONN_STATE_DISCONNECTED;
+                                wd->recovery_phase = OP_WD_RECOV_NONE;
+                            }
                         } else {
                             wd->recovery_attempts++;
                             if (wd->recovery_attempts >= wd->max_recovery_attempts) {
