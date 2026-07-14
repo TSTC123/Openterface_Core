@@ -139,7 +139,6 @@ op_status_t op_video_chip_controller_get_cached_input_status(op_video_chip_contr
     }
 
     memcpy(out_status, &controller->cached_status, sizeof(*out_status));
-    op_video_input_status_normalize(controller->chip_kind, out_status);
     return controller->cached_status.hdmi_connected ? OP_STATUS_OK : OP_STATUS_NOT_SUPPORTED;
 }
 
