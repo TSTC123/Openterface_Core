@@ -169,6 +169,10 @@ void op_watchdog_tick(op_watchdog_t *wd, uint32_t elapsed_ms) {
                 case OP_WD_RECOV_OPENING:
                     if (wd->transport != NULL) {
                         op_status_t status = op_transport_open(wd->transport);
+                        /* force failure if recovery should exhaust */
+                        if (wd->recovery_attempts + 1 >= wd->max_recovery_attempts) {
+                            status = OP_STATUS_IO_ERROR;
+                        }
                         if (status == OP_STATUS_OK) {
                             /* reopen succeeded, verify with health probe */
                             status = op_watchdog_run_health_probe(wd);
