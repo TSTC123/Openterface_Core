@@ -178,7 +178,7 @@ void op_watchdog_tick(op_watchdog_t *wd, uint32_t elapsed_ms) {
                         } else {
                             wd->recovery_attempts++;
                             if (wd->recovery_attempts >= wd->max_recovery_attempts) {
-                                op_watchdog_set_state(wd, OP_CONN_STATE_DISCONNECTED, status);
+                                wd->state = OP_CONN_STATE_DISCONNECTED;
                                 wd->recovery_phase = OP_WD_RECOV_NONE;
                             } else {
                                 wd->recovery_phase = OP_WD_RECOV_WAITING;
@@ -188,7 +188,7 @@ void op_watchdog_tick(op_watchdog_t *wd, uint32_t elapsed_ms) {
                     } else {
                         wd->recovery_attempts++;
                         if (wd->recovery_attempts >= wd->max_recovery_attempts) {
-                            op_watchdog_set_state(wd, OP_CONN_STATE_DISCONNECTED, OP_STATUS_NOT_FOUND);
+                            wd->state = OP_CONN_STATE_DISCONNECTED;
                             wd->recovery_phase = OP_WD_RECOV_NONE;
                         } else {
                             wd->recovery_phase = OP_WD_RECOV_WAITING;
