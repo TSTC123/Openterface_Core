@@ -173,20 +173,14 @@ void op_watchdog_tick(op_watchdog_t *wd, uint32_t elapsed_ms) {
                             /* reopen succeeded, verify with health probe */
                             status = op_watchdog_run_health_probe(wd);
                         }
-                        if (status == OP_STATUS_OK) {
-                            /* only reset to connected if recovery not exhausted */
-                            if (wd->recovery_attempts < wd->max_recovery_attempts) {
-                                op_watchdog_reset_to_connected(wd);
-                            } else {
-                                wd->state = OP_CONN_STATE_DISCONNECTED;
-                                wd->recovery_phase = OP_WD_RECOV_NONE;
-                            }
+                        if (status == OP_STATUS_OK && wd->recovery_attempts < wd->max_recovery_attempts) {
+                            op_watchdog_reset_to_connected(wd);
                         } else {
                             wd->recovery_attempts++;
-                            if (wd->recovery_attempts >= wd->max_recovery_attempts) {
-                                wd->state = OP_CONN_STATE_DISCONNECTED;
-                                wd->recovery_phase = OP_WD_RECOV_NONE;
-                            } else {
+                            wd->state = OP_CONN_STATE_DISCONNECTED;
+                            wd->recovery_phase = OP_WD_RECOV_NONE;
+                            if (wd->recovery_attempts < wd->max_recovery_attempts) {
+                                wd->state = OP_CONN_STATE_RECOVERING;
                                 wd->recovery_phase = OP_WD_RECOV_WAITING;
                                 wd->recovery_timer_ms = 0;
                             }
