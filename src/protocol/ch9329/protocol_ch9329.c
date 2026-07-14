@@ -38,7 +38,7 @@ int op_ch9329_build_usb_switch_packet(uint8_t out[OP_CH9329_PKT_USB_SWITCH_SIZE]
     out[3] = OP_CH9329_CMD_USB_SWITCH;
     out[4] = 0x05u;
     out[9] = request_type;
-    out[10] = op_ch9329_checksum(out, OP_CH9329_PKT_USB_SWITCH_SIZE - 1);
+    out[10] = op_ch9329_checksum(out, OP_CH9329_PKT_USB_SWITCH_SIZE);
     return (int)OP_CH9329_PKT_USB_SWITCH_SIZE;
 }
 
@@ -59,7 +59,7 @@ op_status_t op_ch9329_parse_usb_switch_response(const uint8_t *packet, size_t le
         return OP_STATUS_IO_ERROR;
     }
 
-    if (op_ch9329_checksum(packet, (int)(OP_CH9329_PKT_USB_SWITCH_RESPONSE_SIZE - 1u)) != packet[OP_CH9329_PKT_USB_SWITCH_RESPONSE_SIZE - 1u]) {
+    if (op_ch9329_checksum(packet, (int)OP_CH9329_PKT_USB_SWITCH_RESPONSE_SIZE) != packet[OP_CH9329_PKT_USB_SWITCH_RESPONSE_SIZE - 1u]) {
         return OP_STATUS_IO_ERROR;
     }
 

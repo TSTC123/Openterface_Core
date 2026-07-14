@@ -142,7 +142,7 @@ static void test_usb_switch_protocol(void) {
     ASSERT_EQ_INT(0x05, packet[4], "usb switch payload length");
     ASSERT_EQ_INT(OP_CH9329_USB_SWITCH_QUERY, packet[9], "usb switch query request value");
 
-    response[6] = op_ch9329_checksum(response, (int)OP_CH9329_PKT_USB_SWITCH_RESPONSE_SIZE - 1);
+    response[6] = op_ch9329_checksum(response, (int)OP_CH9329_PKT_USB_SWITCH_RESPONSE_SIZE);
     ASSERT_EQ_INT(OP_STATUS_OK, op_ch9329_parse_usb_switch_response(response, sizeof(response), &status), "usb switch response parse");
     ASSERT_EQ_INT(OP_CH9329_USB_SWITCH_TARGET, status, "usb switch response target status");
 }

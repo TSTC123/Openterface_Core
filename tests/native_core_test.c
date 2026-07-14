@@ -105,7 +105,7 @@ static op_status_t test_serial_write(void *context, const uint8_t *buffer, size_
     serial->pending_response[3] = TEST_CH9329_RESP_USB_SWITCH;
     serial->pending_response[4] = 0x01u;
     serial->pending_response[5] = mode_status;
-    serial->pending_response[6] = (uint8_t)((TEST_CH9329_HEADER_0 + TEST_CH9329_HEADER_1 + TEST_CH9329_ADDR_DEFAULT + TEST_CH9329_RESP_USB_SWITCH + 0x01u + mode_status) & 0xFFu);
+    serial->pending_response[6] = (uint8_t)((serial->pending_response[0] + serial->pending_response[1] + serial->pending_response[2] + serial->pending_response[3] + serial->pending_response[4] + serial->pending_response[5]) & 0xFFu);
     serial->pending_length = TEST_CH9329_PKT_USB_SWITCH_RESPONSE_SIZE;
     return OP_STATUS_OK;
 }
