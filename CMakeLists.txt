@@ -54,10 +54,14 @@ target_link_libraries(openterface_protocol_ch9329 PUBLIC openterface_core_input)
 # ── platform: internal-only backend layer ────────────────────────────────
 set(OPENTERFACE_PLATFORM_SOURCES
     src/platform/platform_backend.c
-    src/platform/platform_linux.c
     src/platform/platform_stub.c
-    src/platform/platform_windows.c
 )
+
+if(WIN32)
+    list(APPEND OPENTERFACE_PLATFORM_SOURCES src/platform/platform_windows.c)
+elseif(UNIX AND NOT APPLE)
+    list(APPEND OPENTERFACE_PLATFORM_SOURCES src/platform/platform_linux.c)
+endif()
 
 add_library(openterface_platform_internal STATIC ${OPENTERFACE_PLATFORM_SOURCES})
 target_include_directories(openterface_platform_internal
@@ -70,7 +74,7 @@ target_compile_options(openterface_platform_internal PRIVATE
     $<$<NOT:$<C_COMPILER_ID:MSVC>>:-Wall -Wextra>
 )
 if(WIN32)
-    target_link_libraries(openterface_platform_internal PRIVATE hid)
+    target_link_libraries(openterface_platform_internal PRIVATE hid setupapi)
 endif()
 
 # ── native core: device/hid/chip/video-status/usb-mode ───────────────────
