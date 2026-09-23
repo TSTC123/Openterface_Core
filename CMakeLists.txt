@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.14)
 project(OpenterfaceCore LANGUAGES C CXX VERSION 0.1.0)
 
-set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD 17)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
 # ── output directories ──────────────────────────────────────────────────
@@ -51,7 +51,6 @@ set(OPENTERFACE_CORE_SOURCES
     src/transport/transport.c
 
     # Input layer: HID event mapping and packet building
-    src/input/input_event.c
     src/input/input_code_map.c
     src/input/input_packet.c
     src/input/input_parser.c
@@ -176,6 +175,11 @@ if(BUILD_TESTS)
     add_executable(openterface_core_skeleton_test tests/core_skeleton_test.c)
     target_link_libraries(openterface_core_skeleton_test PRIVATE openterface_core)
     add_test(NAME openterface_core_skeleton_test COMMAND openterface_core_skeleton_test)
+
+    # DOM removal verification test
+    add_executable(dom_removal_verification_test tests/dom_removal_verification_test.c)
+    target_link_libraries(dom_removal_verification_test PRIVATE openterface_core)
+    add_test(NAME dom_removal_verification_test COMMAND dom_removal_verification_test)
 endif()
 
 # ── install rules ────────────────────────────────────────────────────────

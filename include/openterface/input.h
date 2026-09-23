@@ -61,9 +61,6 @@ typedef struct {
 
 /* ── HID lookup API ─────────────────────────────────────────────────────── */
 
-/** Map a DOM event.code string to a HID usage code. */
-int op_input_hid_code_from_dom_code(const char *dom_code);
-
 /** Look up a HID usage code by key name (e.g. "Enter", "A", "F1"). */
 int op_input_hid_code_from_name(const char *key_name);
 

@@ -155,33 +155,6 @@ static void test_press_release(void) {
     ASSERT_EQ_INT(0x00, out[OP_INPUT_PKT_KEYBOARD_SIZE + 7], "release key slot 1 = 0");
 }
 
-/* -- DOM event code → HID ------------------------------------------------ */
-
-static void test_dom_code_mapping(void) {
-    /* Letters */
-    ASSERT_EQ_INT(0x04, op_input_hid_code_from_dom_code("KeyA"), "KeyA");
-    ASSERT_EQ_INT(0x1D, op_input_hid_code_from_dom_code("KeyZ"), "KeyZ");
-    /* Digits */
-    ASSERT_EQ_INT(0x1E, op_input_hid_code_from_dom_code("Digit1"), "Digit1");
-    ASSERT_EQ_INT(0x27, op_input_hid_code_from_dom_code("Digit0"), "Digit0");
-    /* Modifiers */
-    ASSERT_EQ_INT(0xE0, op_input_hid_code_from_dom_code("ControlLeft"), "ControlLeft");
-    ASSERT_EQ_INT(0xE4, op_input_hid_code_from_dom_code("ControlRight"), "ControlRight");
-    ASSERT_EQ_INT(0xE1, op_input_hid_code_from_dom_code("ShiftLeft"), "ShiftLeft");
-    ASSERT_EQ_INT(0xE3, op_input_hid_code_from_dom_code("MetaLeft"), "MetaLeft");
-    /* Arrows */
-    ASSERT_EQ_INT(0x52, op_input_hid_code_from_dom_code("ArrowUp"), "ArrowUp");
-    /* Punctuation */
-    ASSERT_EQ_INT(0x2D, op_input_hid_code_from_dom_code("Minus"), "Minus");
-    ASSERT_EQ_INT(0x2F, op_input_hid_code_from_dom_code("BracketLeft"), "BracketLeft");
-    /* Numpad */
-    ASSERT_EQ_INT(0x59, op_input_hid_code_from_dom_code("Numpad1"), "Numpad1");
-    /* Unknown / edge cases */
-    ASSERT_EQ_INT(-1, op_input_hid_code_from_dom_code("BrowserBack"), "unknown");
-    ASSERT_EQ_INT(-1, op_input_hid_code_from_dom_code(""), "empty");
-    ASSERT_EQ_INT(-1, op_input_hid_code_from_dom_code(NULL), "NULL");
-}
-
 /* -- HID code lookup ----------------------------------------------------─ */
 
 static void test_hid_codes(void) {
@@ -383,7 +356,6 @@ int main(void) {
     RUN_TEST(test_mouse_packet);
     RUN_TEST(test_mouse_abs_packet);
     RUN_TEST(test_press_release);
-    RUN_TEST(test_dom_code_mapping);
     RUN_TEST(test_hid_codes);
     RUN_TEST(test_char_to_hid);
     RUN_TEST(test_token_parser);
