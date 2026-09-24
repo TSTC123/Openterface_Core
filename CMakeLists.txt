@@ -8,39 +8,16 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-# ── platform: internal-only backend layer ────────────────────────────────
-# Kept separate: platform-specific, not part of the public API
-set(OPENTERFACE_PLATFORM_SOURCES
-    src/platform/platform_backend.c
-    src/platform/platform_stub.c
-)
-
-if(WIN32)
-    list(APPEND OPENTERFACE_PLATFORM_SOURCES src/platform/platform_windows.c)
-elseif(UNIX AND NOT APPLE)
-    list(APPEND OPENTERFACE_PLATFORM_SOURCES src/platform/platform_linux.c)
-endif()
-
-add_library(openterface_platform_internal STATIC ${OPENTERFACE_PLATFORM_SOURCES})
-target_include_directories(openterface_platform_internal
-    PUBLIC include
-    PRIVATE src/platform
-)
-target_compile_options(openterface_platform_internal PRIVATE
-    $<$<C_COMPILER_ID:MSVC>:/W4>
-    $<$<NOT:$<C_COMPILER_ID:MSVC>>:-Wall -Wextra>
-)
-if(WIN32)
-    target_link_libraries(openterface_platform_internal PRIVATE hid setupapi)
-endif()
-
 # ── unified Core SDK ─────────────────────────────────────────────────────
-# Single library merging all core functionality:
+# Single library with all core functionality:
 #   - Common layer: version, capability, device, profile, transport
 #   - Input layer: HID lookup, packet building, macro parsing
 #   - Protocol layer: CH9329 serial protocol
 #   - Native layer: chip detection, HID session, video status, USB mode (optional)
 #   - Watchdog: connection health monitoring (optional)
+#
+# Note: Platform-specific backends are NOT included.
+# Frontends (Qt/Android/Web) implement and register their own backends.
 
 set(OPENTERFACE_CORE_SOURCES
     # Common layer: data structures and abstract interfaces
@@ -97,16 +74,11 @@ target_compile_options(openterface_core PRIVATE
 )
 
 if(BUILD_NATIVE_CORE)
-    # Native code needs access to platform internals and private headers
+    # Native code needs access to private headers
     target_include_directories(openterface_core
         PRIVATE
-            src/platform
             src/hid
             src/chip
-    )
-    target_link_libraries(openterface_core
-        PRIVATE
-            openterface_platform_internal
     )
 endif()
 
@@ -161,8 +133,13 @@ if(BUILD_TESTS)
     add_test(NAME protocol_ch9329_test COMMAND protocol_ch9329_test)
 
     # Native core tests (require BUILD_NATIVE_CORE)
+    # These tests use the stub backend for testing
     if(BUILD_NATIVE_CORE)
-        add_executable(openterface_native_core_test tests/native_core_test.c)
+        add_executable(openterface_native_core_test
+            tests/native_core_test.c
+            tests/stub/platform_stub.c
+        )
+        target_include_directories(openterface_native_core_test PRIVATE tests)
         target_link_libraries(openterface_native_core_test PRIVATE openterface_core)
         add_test(NAME openterface_native_core_test COMMAND openterface_native_core_test)
 
