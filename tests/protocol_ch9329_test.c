@@ -422,6 +422,191 @@ static void test_parse_packet_roundtrip_all_types(void) {
     ASSERT_EQ_INT(OP_STATUS_OK, op_ch9329_parse_packet(usb_resp, uslen, &parsed), "usb_resp roundtrip");
 }
 
+/* ── Specific response parser tests ────────────────────────────────────── */
+
+static void test_parse_keyboard_response(void) {
+    /* Build a keyboard response: same structure as keyboard packet but cmd = 0x82 */
+    uint8_t response[OP_CH9329_PKT_KEYBOARD_SIZE];
+    op_ch9329_keyboard_response_t parsed;
+    op_status_t status;
+
+    response[0] = OP_CH9329_HEADER_0;
+    response[1] = OP_CH9329_HEADER_1;
+    response[2] = OP_CH9329_ADDR_DEFAULT;
+    response[3] = OP_CH9329_RESP_KEYBOARD;  /* 0x82 */
+    response[4] = 0x08;                      /* data length */
+    response[5] = OP_INPUT_MOD_SHIFT;        /* modifiers */
+    response[6] = 0x00;                      /* reserved */
+    response[7] = 0x04;                      /* key 'A' */
+    response[8] = 0x05;                      /* key 'B' */
+    response[9] = 0x00;
+    response[10] = 0x00;
+    response[11] = 0x00;
+    response[12] = 0x00;
+    response[13] = op_ch9329_checksum(response, OP_CH9329_PKT_KEYBOARD_SIZE);
+
+    status = op_ch9329_parse_keyboard_response(response, sizeof(response), &parsed);
+    ASSERT_EQ_INT(OP_STATUS_OK, status, "parse returns OK");
+    ASSERT_EQ_INT(OP_INPUT_MOD_SHIFT, parsed.modifiers, "modifiers = SHIFT");
+    ASSERT_EQ_INT(0x00, parsed.reserved, "reserved = 0");
+    ASSERT_EQ_INT(0x04, parsed.keys[0], "key[0] = A");
+    ASSERT_EQ_INT(0x05, parsed.keys[1], "key[1] = B");
+    ASSERT_EQ_INT(0x00, parsed.keys[2], "key[2] = empty");
+}
+
+static void test_parse_keyboard_response_null(void) {
+    uint8_t response[OP_CH9329_PKT_KEYBOARD_SIZE];
+    op_ch9329_keyboard_response_t parsed;
+
+    ASSERT_EQ_INT(OP_STATUS_INVALID_ARGUMENT,
+                  op_ch9329_parse_keyboard_response(NULL, sizeof(response), &parsed),
+                  "NULL packet");
+    ASSERT_EQ_INT(OP_STATUS_INVALID_ARGUMENT,
+                  op_ch9329_parse_keyboard_response(response, sizeof(response), NULL),
+                  "NULL out");
+}
+
+static void test_parse_keyboard_response_bad_cmd(void) {
+    uint8_t response[OP_CH9329_PKT_KEYBOARD_SIZE];
+    op_ch9329_keyboard_response_t parsed;
+
+    response[0] = OP_CH9329_HEADER_0;
+    response[1] = OP_CH9329_HEADER_1;
+    response[2] = OP_CH9329_ADDR_DEFAULT;
+    response[3] = 0x02;  /* wrong: should be 0x82 */
+    response[4] = 0x08;
+    memset(response + 5, 0, 9);
+    response[13] = op_ch9329_checksum(response, OP_CH9329_PKT_KEYBOARD_SIZE);
+
+    ASSERT_EQ_INT(OP_STATUS_IO_ERROR,
+                  op_ch9329_parse_keyboard_response(response, sizeof(response), &parsed),
+                  "bad cmd returns IO_ERROR");
+}
+
+static void test_parse_mouse_rel_response(void) {
+    uint8_t response[OP_CH9329_PKT_MOUSE_REL_SIZE];
+    op_ch9329_mouse_rel_response_t parsed;
+    op_status_t status;
+
+    response[0] = OP_CH9329_HEADER_0;
+    response[1] = OP_CH9329_HEADER_1;
+    response[2] = OP_CH9329_ADDR_DEFAULT;
+    response[3] = OP_CH9329_RESP_MOUSE_REL;  /* 0x85 */
+    response[4] = 0x05;                       /* data length */
+    response[5] = 0x01;                       /* mode = relative */
+    response[6] = OP_INPUT_MS_BTN_LEFT;       /* buttons */
+    response[7] = 10;                         /* dx */
+    response[8] = (uint8_t)(-20);             /* dy = -20 */
+    response[9] = 1;                          /* wheel */
+    response[10] = op_ch9329_checksum(response, OP_CH9329_PKT_MOUSE_REL_SIZE);
+
+    status = op_ch9329_parse_mouse_rel_response(response, sizeof(response), &parsed);
+    ASSERT_EQ_INT(OP_STATUS_OK, status, "parse returns OK");
+    ASSERT_EQ_INT(0x01, parsed.mode, "mode = relative");
+    ASSERT_EQ_INT(OP_INPUT_MS_BTN_LEFT, parsed.buttons, "buttons = LEFT");
+    ASSERT_EQ_INT(10, parsed.dx, "dx = 10");
+    ASSERT_EQ_INT(-20, parsed.dy, "dy = -20");
+    ASSERT_EQ_INT(1, parsed.wheel, "wheel = 1");
+}
+
+static void test_parse_mouse_rel_response_null(void) {
+    uint8_t response[OP_CH9329_PKT_MOUSE_REL_SIZE];
+    op_ch9329_mouse_rel_response_t parsed;
+
+    ASSERT_EQ_INT(OP_STATUS_INVALID_ARGUMENT,
+                  op_ch9329_parse_mouse_rel_response(NULL, sizeof(response), &parsed),
+                  "NULL packet");
+    ASSERT_EQ_INT(OP_STATUS_INVALID_ARGUMENT,
+                  op_ch9329_parse_mouse_rel_response(response, sizeof(response), NULL),
+                  "NULL out");
+}
+
+static void test_parse_mouse_abs_response(void) {
+    uint8_t response[OP_CH9329_PKT_MOUSE_ABS_SIZE];
+    op_ch9329_mouse_abs_response_t parsed;
+    op_status_t status;
+    uint16_t x = 1000, y = 2000;
+
+    response[0] = OP_CH9329_HEADER_0;
+    response[1] = OP_CH9329_HEADER_1;
+    response[2] = OP_CH9329_ADDR_DEFAULT;
+    response[3] = OP_CH9329_RESP_MOUSE_ABS;  /* 0x84 */
+    response[4] = 0x07;                       /* data length */
+    response[5] = 0x02;                       /* mode = absolute */
+    response[6] = OP_INPUT_MS_BTN_RIGHT;      /* buttons */
+    response[7] = x & 0xFF;                   /* x low */
+    response[8] = (x >> 8) & 0xFF;            /* x high */
+    response[9] = y & 0xFF;                   /* y low */
+    response[10] = (y >> 8) & 0xFF;           /* y high */
+    response[11] = (uint8_t)(-1);             /* wheel = -1 */
+    response[12] = op_ch9329_checksum(response, OP_CH9329_PKT_MOUSE_ABS_SIZE);
+
+    status = op_ch9329_parse_mouse_abs_response(response, sizeof(response), &parsed);
+    ASSERT_EQ_INT(OP_STATUS_OK, status, "parse returns OK");
+    ASSERT_EQ_INT(0x02, parsed.mode, "mode = absolute");
+    ASSERT_EQ_INT(OP_INPUT_MS_BTN_RIGHT, parsed.buttons, "buttons = RIGHT");
+    ASSERT_EQ_INT(1000, parsed.x, "x = 1000");
+    ASSERT_EQ_INT(2000, parsed.y, "y = 2000");
+    ASSERT_EQ_INT(-1, parsed.wheel, "wheel = -1");
+}
+
+static void test_parse_mouse_abs_response_null(void) {
+    uint8_t response[OP_CH9329_PKT_MOUSE_ABS_SIZE];
+    op_ch9329_mouse_abs_response_t parsed;
+
+    ASSERT_EQ_INT(OP_STATUS_INVALID_ARGUMENT,
+                  op_ch9329_parse_mouse_abs_response(NULL, sizeof(response), &parsed),
+                  "NULL packet");
+    ASSERT_EQ_INT(OP_STATUS_INVALID_ARGUMENT,
+                  op_ch9329_parse_mouse_abs_response(response, sizeof(response), NULL),
+                  "NULL out");
+}
+
+static void test_parse_response_bad_checksum(void) {
+    uint8_t kb_resp[OP_CH9329_PKT_KEYBOARD_SIZE];
+    uint8_t ms_rel_resp[OP_CH9329_PKT_MOUSE_REL_SIZE];
+    uint8_t ms_abs_resp[OP_CH9329_PKT_MOUSE_ABS_SIZE];
+    op_ch9329_keyboard_response_t kb_parsed;
+    op_ch9329_mouse_rel_response_t ms_rel_parsed;
+    op_ch9329_mouse_abs_response_t ms_abs_parsed;
+
+    /* Keyboard response with bad checksum */
+    kb_resp[0] = OP_CH9329_HEADER_0;
+    kb_resp[1] = OP_CH9329_HEADER_1;
+    kb_resp[2] = OP_CH9329_ADDR_DEFAULT;
+    kb_resp[3] = OP_CH9329_RESP_KEYBOARD;
+    kb_resp[4] = 0x08;
+    memset(kb_resp + 5, 0, 8);
+    kb_resp[13] = 0xFF;  /* bad checksum */
+    ASSERT_EQ_INT(OP_STATUS_IO_ERROR,
+                  op_ch9329_parse_keyboard_response(kb_resp, sizeof(kb_resp), &kb_parsed),
+                  "keyboard bad checksum");
+
+    /* Mouse rel response with bad checksum */
+    ms_rel_resp[0] = OP_CH9329_HEADER_0;
+    ms_rel_resp[1] = OP_CH9329_HEADER_1;
+    ms_rel_resp[2] = OP_CH9329_ADDR_DEFAULT;
+    ms_rel_resp[3] = OP_CH9329_RESP_MOUSE_REL;
+    ms_rel_resp[4] = 0x05;
+    memset(ms_rel_resp + 5, 0, 5);
+    ms_rel_resp[10] = 0xFF;  /* bad checksum */
+    ASSERT_EQ_INT(OP_STATUS_IO_ERROR,
+                  op_ch9329_parse_mouse_rel_response(ms_rel_resp, sizeof(ms_rel_resp), &ms_rel_parsed),
+                  "mouse_rel bad checksum");
+
+    /* Mouse abs response with bad checksum */
+    ms_abs_resp[0] = OP_CH9329_HEADER_0;
+    ms_abs_resp[1] = OP_CH9329_HEADER_1;
+    ms_abs_resp[2] = OP_CH9329_ADDR_DEFAULT;
+    ms_abs_resp[3] = OP_CH9329_RESP_MOUSE_ABS;
+    ms_abs_resp[4] = 0x07;
+    memset(ms_abs_resp + 5, 0, 7);
+    ms_abs_resp[12] = 0xFF;  /* bad checksum */
+    ASSERT_EQ_INT(OP_STATUS_IO_ERROR,
+                  op_ch9329_parse_mouse_abs_response(ms_abs_resp, sizeof(ms_abs_resp), &ms_abs_parsed),
+                  "mouse_abs bad checksum");
+}
+
 int main(void) {
     printf("Running protocol_ch9329 tests...\n");
 
@@ -451,6 +636,14 @@ int main(void) {
     RUN_TEST(test_parse_packet_bad_checksum);
     RUN_TEST(test_parse_packet_len_mismatch);
     RUN_TEST(test_parse_packet_roundtrip_all_types);
+    RUN_TEST(test_parse_keyboard_response);
+    RUN_TEST(test_parse_keyboard_response_null);
+    RUN_TEST(test_parse_keyboard_response_bad_cmd);
+    RUN_TEST(test_parse_mouse_rel_response);
+    RUN_TEST(test_parse_mouse_rel_response_null);
+    RUN_TEST(test_parse_mouse_abs_response);
+    RUN_TEST(test_parse_mouse_abs_response_null);
+    RUN_TEST(test_parse_response_bad_checksum);
 
     if (test_failures != 0) {
         fprintf(stderr, "protocol_ch9329_test: %d failure(s)\n", test_failures);

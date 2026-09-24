@@ -113,3 +113,91 @@ op_status_t op_ch9329_parse_packet(const uint8_t *raw, int len,
 
     return OP_STATUS_OK;
 }
+
+op_status_t op_ch9329_parse_keyboard_response(const uint8_t *packet, size_t length,
+                                               op_ch9329_keyboard_response_t *out) {
+    if (packet == NULL || out == NULL) {
+        return OP_STATUS_INVALID_ARGUMENT;
+    }
+
+    if (length < OP_CH9329_PKT_KEYBOARD_SIZE) {
+        return OP_STATUS_IO_ERROR;
+    }
+
+    if (packet[0] != OP_CH9329_HEADER_0 || packet[1] != OP_CH9329_HEADER_1 || packet[2] != OP_CH9329_ADDR_DEFAULT) {
+        return OP_STATUS_IO_ERROR;
+    }
+
+    if (packet[3] != OP_CH9329_RESP_KEYBOARD || packet[4] != 0x08u) {
+        return OP_STATUS_IO_ERROR;
+    }
+
+    if (op_ch9329_checksum(packet, (int)OP_CH9329_PKT_KEYBOARD_SIZE) != packet[OP_CH9329_PKT_KEYBOARD_SIZE - 1u]) {
+        return OP_STATUS_IO_ERROR;
+    }
+
+    out->modifiers = packet[5];
+    out->reserved = packet[6];
+    memcpy(out->keys, packet + 7, 6);
+    return OP_STATUS_OK;
+}
+
+op_status_t op_ch9329_parse_mouse_rel_response(const uint8_t *packet, size_t length,
+                                                op_ch9329_mouse_rel_response_t *out) {
+    if (packet == NULL || out == NULL) {
+        return OP_STATUS_INVALID_ARGUMENT;
+    }
+
+    if (length < OP_CH9329_PKT_MOUSE_REL_SIZE) {
+        return OP_STATUS_IO_ERROR;
+    }
+
+    if (packet[0] != OP_CH9329_HEADER_0 || packet[1] != OP_CH9329_HEADER_1 || packet[2] != OP_CH9329_ADDR_DEFAULT) {
+        return OP_STATUS_IO_ERROR;
+    }
+
+    if (packet[3] != OP_CH9329_RESP_MOUSE_REL || packet[4] != 0x05u) {
+        return OP_STATUS_IO_ERROR;
+    }
+
+    if (op_ch9329_checksum(packet, (int)OP_CH9329_PKT_MOUSE_REL_SIZE) != packet[OP_CH9329_PKT_MOUSE_REL_SIZE - 1u]) {
+        return OP_STATUS_IO_ERROR;
+    }
+
+    out->mode = packet[5];
+    out->buttons = packet[6];
+    out->dx = (int8_t)packet[7];
+    out->dy = (int8_t)packet[8];
+    out->wheel = (int8_t)packet[9];
+    return OP_STATUS_OK;
+}
+
+op_status_t op_ch9329_parse_mouse_abs_response(const uint8_t *packet, size_t length,
+                                                op_ch9329_mouse_abs_response_t *out) {
+    if (packet == NULL || out == NULL) {
+        return OP_STATUS_INVALID_ARGUMENT;
+    }
+
+    if (length < OP_CH9329_PKT_MOUSE_ABS_SIZE) {
+        return OP_STATUS_IO_ERROR;
+    }
+
+    if (packet[0] != OP_CH9329_HEADER_0 || packet[1] != OP_CH9329_HEADER_1 || packet[2] != OP_CH9329_ADDR_DEFAULT) {
+        return OP_STATUS_IO_ERROR;
+    }
+
+    if (packet[3] != OP_CH9329_RESP_MOUSE_ABS || packet[4] != 0x07u) {
+        return OP_STATUS_IO_ERROR;
+    }
+
+    if (op_ch9329_checksum(packet, (int)OP_CH9329_PKT_MOUSE_ABS_SIZE) != packet[OP_CH9329_PKT_MOUSE_ABS_SIZE - 1u]) {
+        return OP_STATUS_IO_ERROR;
+    }
+
+    out->mode = packet[5];
+    out->buttons = packet[6];
+    out->x = (uint16_t)(packet[7] | (packet[8] << 8));
+    out->y = (uint16_t)(packet[9] | (packet[10] << 8));
+    out->wheel = (int8_t)packet[11];
+    return OP_STATUS_OK;
+}
