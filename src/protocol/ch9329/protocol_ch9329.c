@@ -70,3 +70,46 @@ op_status_t op_ch9329_parse_usb_switch_response(const uint8_t *packet, size_t le
     *out_status = packet[5];
     return OP_STATUS_OK;
 }
+
+op_status_t op_ch9329_parse_packet(const uint8_t *raw, int len,
+                                    op_ch9329_parsed_packet_t *out) {
+    uint8_t data_len;
+    int expected_len;
+
+    if (raw == NULL || out == NULL) {
+        return OP_STATUS_INVALID_ARGUMENT;
+    }
+
+    /* Minimum packet: 5-byte header + 1-byte checksum = 6 bytes */
+    if (len < (int)OP_CH9329_MIN_PACKET_SIZE) {
+        return OP_STATUS_IO_ERROR;
+    }
+
+    /* Header check */
+    if (raw[0] != OP_CH9329_HEADER_0 || raw[1] != OP_CH9329_HEADER_1) {
+        return OP_STATUS_IO_ERROR;
+    }
+
+    /* Extract payload length from header[4] */
+    data_len = raw[4];
+
+    /* Expected total: 5 header + data_len payload + 1 checksum */
+    expected_len = 5 + (int)data_len + 1;
+    if (len != expected_len) {
+        return OP_STATUS_IO_ERROR;
+    }
+
+    /* Fill parsed result */
+    memcpy(out->header, raw, 5);
+    memcpy(out->data, raw + 5, data_len);
+    out->data_len = data_len;
+    out->checksum = raw[len - 1];
+    out->checksum_calc = op_ch9329_checksum(raw, len);
+    out->valid = (out->checksum == out->checksum_calc);
+
+    if (!out->valid) {
+        return OP_STATUS_IO_ERROR;
+    }
+
+    return OP_STATUS_OK;
+}
