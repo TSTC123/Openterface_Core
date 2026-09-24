@@ -10,8 +10,8 @@ void op_ch9329_hex_dump(const uint8_t data[], int len, char out[]) {
     op_input_hex_dump(data, len, out);
 }
 
-int op_ch9329_build_keyboard_packet(uint8_t out[OP_CH9329_PKT_KEYBOARD_SIZE], uint8_t modifiers, const uint8_t keys[], int num_keys) {
-    return op_input_build_keyboard(out, modifiers, keys, num_keys);
+int op_ch9329_build_keyboard_packet(uint8_t out[OP_CH9329_PKT_KEYBOARD_SIZE], uint8_t modifiers, const uint8_t keys[], int num_keys, uint8_t flags) {
+    return op_input_build_keyboard(out, modifiers, keys, num_keys, flags);
 }
 
 int op_ch9329_build_mouse_rel_packet(uint8_t out[OP_CH9329_PKT_MOUSE_REL_SIZE], uint8_t buttons, int8_t dx, int8_t dy, int8_t wheel) {
@@ -22,8 +22,8 @@ int op_ch9329_build_mouse_abs_packet(uint8_t out[OP_CH9329_PKT_MOUSE_ABS_SIZE], 
     return op_input_build_mouse_abs(out, buttons, x, y, wheel);
 }
 
-int op_ch9329_build_press_release_packets(uint8_t out[2 * OP_CH9329_PKT_KEYBOARD_SIZE], uint8_t modifiers, uint8_t hid_code) {
-    return op_input_build_press_release(out, modifiers, hid_code);
+int op_ch9329_build_press_release_packets(uint8_t out[2 * OP_CH9329_PKT_KEYBOARD_SIZE], uint8_t modifiers, uint8_t hid_code, uint8_t flags) {
+    return op_input_build_press_release(out, modifiers, hid_code, flags);
 }
 
 int op_ch9329_build_usb_switch_packet(uint8_t out[OP_CH9329_PKT_USB_SWITCH_SIZE], uint8_t request_type) {

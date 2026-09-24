@@ -222,7 +222,7 @@ static void test_wrapper_functions(void) {
     uint8_t keys[] = {0x04, 0x05};
     int len;
 
-    len = op_ch9329_build_keyboard_packet(keyboard_pkt, 0x00, keys, 2);
+    len = op_ch9329_build_keyboard_packet(keyboard_pkt, 0x00, keys, 2, OP_INPUT_KB_FLAG_NONE);
     ASSERT_EQ_INT(OP_CH9329_PKT_KEYBOARD_SIZE, len, "keyboard packet length");
 
     len = op_ch9329_build_mouse_rel_packet(mouse_rel_pkt, 0x01, 10, 20, 0);
@@ -231,7 +231,7 @@ static void test_wrapper_functions(void) {
     len = op_ch9329_build_mouse_abs_packet(mouse_abs_pkt, 0x01, 1000, 2000, 0);
     ASSERT_EQ_INT(OP_CH9329_PKT_MOUSE_ABS_SIZE, len, "mouse_abs packet length");
 
-    len = op_ch9329_build_press_release_packets(press_release, 0x00, 0x04);
+    len = op_ch9329_build_press_release_packets(press_release, 0x00, 0x04, OP_INPUT_KB_FLAG_NONE);
     ASSERT_EQ_INT(2 * OP_CH9329_PKT_KEYBOARD_SIZE, len, "press_release packet length");
 }
 

@@ -39,7 +39,7 @@ static void test_checksum_known_kb_packet(void) {
 static void test_kb_packet_header(void) {
     uint8_t pkt[14];
     uint8_t keys[6] = {0};
-    op_input_build_keyboard(pkt, OP_INPUT_MOD_NONE, keys, 0);
+    op_input_build_keyboard(pkt, OP_INPUT_MOD_NONE, keys, 0, OP_INPUT_KB_FLAG_NONE);
     ASSERT_EQ_INT(0x57, pkt[0], "header byte 0");
     ASSERT_EQ_INT(0xAB, pkt[1], "header byte 1");
     ASSERT_EQ_INT(0x00, pkt[2], "header byte 2");
@@ -50,7 +50,7 @@ static void test_kb_packet_header(void) {
 static void test_kb_packet_single_key(void) {
     uint8_t pkt[14];
     uint8_t keys[6] = {0x04, 0, 0, 0, 0, 0};
-    op_input_build_keyboard(pkt, OP_INPUT_MOD_NONE, keys, 1);
+    op_input_build_keyboard(pkt, OP_INPUT_MOD_NONE, keys, 1, OP_INPUT_KB_FLAG_NONE);
     ASSERT_EQ_INT(0x00, pkt[5], "no modifier");
     ASSERT_EQ_INT(0x04, pkt[7], "key A in slot 1");
     ASSERT_EQ_INT(0x00, pkt[8], "slot 2 empty");
@@ -60,7 +60,7 @@ static void test_kb_packet_single_key(void) {
 static void test_kb_packet_combined_modifiers(void) {
     uint8_t pkt[14];
     uint8_t keys[6] = {0x04, 0x05, 0, 0, 0, 0};
-    op_input_build_keyboard(pkt, OP_INPUT_MOD_CTRL | OP_INPUT_MOD_SHIFT, keys, 2);
+    op_input_build_keyboard(pkt, OP_INPUT_MOD_CTRL | OP_INPUT_MOD_SHIFT, keys, 2, OP_INPUT_KB_FLAG_NONE);
     ASSERT_EQ_INT(0x03, pkt[5], "CTRL|SHIFT = 0x03");
     ASSERT_EQ_INT(0x04, pkt[7], "key A");
     ASSERT_EQ_INT(0x05, pkt[8], "key B");
@@ -72,14 +72,14 @@ static void test_kb_packet_all_modifiers(void) {
     uint8_t keys[6] = {0x04, 0, 0, 0, 0, 0};
     uint8_t all = OP_INPUT_MOD_LCTRL | OP_INPUT_MOD_LSHIFT | OP_INPUT_MOD_LALT | OP_INPUT_MOD_LGUI
                 | OP_INPUT_MOD_RCTRL | OP_INPUT_MOD_RSHIFT | OP_INPUT_MOD_RALT | OP_INPUT_MOD_RGUI;
-    op_input_build_keyboard(pkt, all, keys, 1);
+    op_input_build_keyboard(pkt, all, keys, 1, OP_INPUT_KB_FLAG_NONE);
     ASSERT_EQ_INT(0xFF, pkt[5], "all modifiers");
 }
 
 static void test_kb_packet_six_keys(void) {
     uint8_t pkt[14];
     uint8_t keys[6] = {0x04, 0x05, 0x06, 0x07, 0x08, 0x09};
-    op_input_build_keyboard(pkt, OP_INPUT_MOD_NONE, keys, 6);
+    op_input_build_keyboard(pkt, OP_INPUT_MOD_NONE, keys, 6, OP_INPUT_KB_FLAG_NONE);
     ASSERT_EQ_INT(0x04, pkt[7],  "slot 1");
     ASSERT_EQ_INT(0x05, pkt[8],  "slot 2");
     ASSERT_EQ_INT(0x06, pkt[9],  "slot 3");
@@ -91,15 +91,15 @@ static void test_kb_packet_six_keys(void) {
 static void test_kb_packet_overflow_clamped(void) {
     uint8_t pkt[14];
     uint8_t seven[7] = {0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A};
-    op_input_build_keyboard(pkt, OP_INPUT_MOD_NONE, seven, 7);
+    op_input_build_keyboard(pkt, OP_INPUT_MOD_NONE, seven, 7, OP_INPUT_KB_FLAG_NONE);
     ASSERT_EQ_INT(0x09, pkt[12], "slot 6 unchanged (7th key dropped)");
 }
 
 static void test_kb_packet_zero_keys(void) {
     uint8_t pkt[14];
     uint8_t keys[6] = {0xFF, 0xFF, 0, 0, 0, 0};
-    op_input_build_keyboard(pkt, OP_INPUT_MOD_NONE, keys, 2);
-    op_input_build_keyboard(pkt, OP_INPUT_MOD_NONE, keys, 0);
+    op_input_build_keyboard(pkt, OP_INPUT_MOD_NONE, keys, 2, OP_INPUT_KB_FLAG_NONE);
+    op_input_build_keyboard(pkt, OP_INPUT_MOD_NONE, keys, 0, OP_INPUT_KB_FLAG_NONE);
     ASSERT_EQ_INT(0x00, pkt[7],  "slot 1 zeroed");
     ASSERT_EQ_INT(0x00, pkt[12], "slot 6 zeroed");
 }
@@ -107,21 +107,21 @@ static void test_kb_packet_zero_keys(void) {
 static void test_kb_packet_negative_keys(void) {
     uint8_t pkt[14];
     uint8_t keys[6] = {0};
-    op_input_build_keyboard(pkt, OP_INPUT_MOD_NONE, keys, -1);
+    op_input_build_keyboard(pkt, OP_INPUT_MOD_NONE, keys, -1, OP_INPUT_KB_FLAG_NONE);
     ASSERT_EQ_INT(0x00, pkt[7], "negative keys treated as 0");
 }
 
 static void test_kb_packet_checksum_filled(void) {
     uint8_t pkt[14];
     uint8_t keys[6] = {0x04, 0, 0, 0, 0, 0};
-    op_input_build_keyboard(pkt, OP_INPUT_MOD_NONE, keys, 1);
+    op_input_build_keyboard(pkt, OP_INPUT_MOD_NONE, keys, 1, OP_INPUT_KB_FLAG_NONE);
     ASSERT_EQ_INT(op_input_checksum(pkt, 14), pkt[13], "checksum auto-filled");
 }
 
 static void test_kb_packet_return_length(void) {
     uint8_t pkt[14];
     uint8_t keys[6] = {0};
-    int len = op_input_build_keyboard(pkt, OP_INPUT_MOD_NONE, keys, 0);
+    int len = op_input_build_keyboard(pkt, OP_INPUT_MOD_NONE, keys, 0, OP_INPUT_KB_FLAG_NONE);
     ASSERT_EQ_INT(OP_INPUT_PKT_KEYBOARD_SIZE, len, "returns 14");
 }
 
@@ -131,7 +131,7 @@ static void test_kb_packet_return_length(void) {
 
 static void test_press_release_basic(void) {
     uint8_t out[28];
-    int len = op_input_build_press_release(out, OP_INPUT_MOD_NONE, 0x28);
+    int len = op_input_build_press_release(out, OP_INPUT_MOD_NONE, 0x28, OP_INPUT_KB_FLAG_NONE);
     ASSERT_EQ_INT(28, len, "press+release length");
     ASSERT_EQ_INT(0x28, out[7], "press key = Enter");
     ASSERT_EQ_INT(0x00, out[5], "press modifier = NONE");
@@ -142,14 +142,14 @@ static void test_press_release_basic(void) {
 
 static void test_press_release_with_modifier(void) {
     uint8_t out[28];
-    op_input_build_press_release(out, OP_INPUT_MOD_SHIFT, 0x04);
+    op_input_build_press_release(out, OP_INPUT_MOD_SHIFT, 0x04, OP_INPUT_KB_FLAG_NONE);
     ASSERT_EQ_INT(OP_INPUT_MOD_SHIFT, out[5], "press has SHIFT");
     ASSERT_EQ_INT(0x00, out[14 + 5], "release no modifier");
 }
 
 static void test_press_release_both_checksums(void) {
     uint8_t out[28];
-    op_input_build_press_release(out, OP_INPUT_MOD_NONE, 0x04);
+    op_input_build_press_release(out, OP_INPUT_MOD_NONE, 0x04, OP_INPUT_KB_FLAG_NONE);
     ASSERT_EQ_INT(op_input_checksum(out, 14), out[13], "press checksum valid");
     ASSERT_EQ_INT(op_input_checksum(out + 14, 14), out[27], "release checksum valid");
 }
@@ -843,12 +843,12 @@ static void test_six_key_rollover_strict(void) {
     uint8_t pkt[14];
     uint8_t six[6] = {0x04, 0x05, 0x06, 0x07, 0x08, 0x09};
     int i;
-    op_input_build_keyboard(pkt, OP_INPUT_MOD_NONE, six, 6);
+    op_input_build_keyboard(pkt, OP_INPUT_MOD_NONE, six, 6, OP_INPUT_KB_FLAG_NONE);
     for (i = 0; i < 6; i++) {
         ASSERT_EQ_INT(six[i], pkt[7 + i], "6-key slot filled");
     }
     uint8_t seven[7] = {0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A};
-    op_input_build_keyboard(pkt, OP_INPUT_MOD_NONE, seven, 7);
+    op_input_build_keyboard(pkt, OP_INPUT_MOD_NONE, seven, 7, OP_INPUT_KB_FLAG_NONE);
     ASSERT_EQ_INT(0x09, pkt[12], "slot 6 unchanged after overflow");
 }
 
