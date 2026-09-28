@@ -46,6 +46,7 @@ if(BUILD_NATIVE_CORE)
         # Chip detection and video chip control
         src/chip/chip_detector.c
         src/chip/video_chip_controller.c
+        src/chip/serial_chip.c
 
         # HID device session management
         src/hid/hid_device_session.c
@@ -146,6 +147,10 @@ if(BUILD_TESTS)
         add_executable(watchdog_test tests/watchdog_test.c)
         target_link_libraries(watchdog_test PRIVATE openterface_core)
         add_test(NAME watchdog_test COMMAND watchdog_test)
+
+        add_executable(serial_chip_test tests/serial_chip_test.c)
+        target_link_libraries(serial_chip_test PRIVATE openterface_core)
+        add_test(NAME serial_chip_test COMMAND serial_chip_test)
     endif()
 
     # Skeleton test: exercises common + input + protocol APIs
