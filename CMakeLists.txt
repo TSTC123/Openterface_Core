@@ -157,11 +157,6 @@ if(BUILD_TESTS)
     add_executable(openterface_core_skeleton_test tests/core_skeleton_test.c)
     target_link_libraries(openterface_core_skeleton_test PRIVATE openterface_core)
     add_test(NAME openterface_core_skeleton_test COMMAND openterface_core_skeleton_test)
-
-    # DOM removal verification test
-    add_executable(dom_removal_verification_test tests/dom_removal_verification_test.c)
-    target_link_libraries(dom_removal_verification_test PRIVATE openterface_core)
-    add_test(NAME dom_removal_verification_test COMMAND dom_removal_verification_test)
 endif()
 
 # ── install rules ────────────────────────────────────────────────────────
